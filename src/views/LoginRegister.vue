@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import InputText from '@/components/InputText.vue'
+import { computed, ref } from 'vue';
 import * as yup from 'yup'
 import { useAuthStore } from '@/stores/auth'
 import { useField, useForm } from 'vee-validate'
@@ -9,12 +8,25 @@ const messageStore = useMessageStore()
 
 import { useRouter } from 'vue-router'
 const router = useRouter()
+const username = ref('');
+
+const confirmPassword = ref('');
+const isLogin = ref(true);
 
 const authStore = useAuthStore()
-const validationSchema = yup.object({
-  email: yup.string().required('The email is required'),
-  password: yup.string().required('The password is required')
-})
+const validationSchema = computed(() => isLogin.value
+  ? yup.object({
+    username: yup.string().required('Username is required'),
+    password: yup.string().required('Password is required')
+  })
+  : yup.object({
+    email: yup.string().required('Email is required'),
+    username: yup.string().required('Username is required'),
+    password: yup.string().required('Password is required'),
+    confirmPassword: yup.string().oneOf([password.value], 'Passwords must match')
+  })
+)
+
 const { errors, handleSubmit } = useForm({
   validationSchema,
   initialValues: {
@@ -37,10 +49,6 @@ const onSubmit = handleSubmit((values) => {
 })
 
 
-const username = ref('');
-
-const confirmPassword = ref('');
-const isLogin = ref(true);
 
 // Toggle between Login and Registration
 const toggleLogin = () => {
@@ -74,17 +82,11 @@ const resetFields = () => {
           <!-- Email/Phone Number Field for Registration Only -->
           <div v-if="!isLogin" class="form-group">
             <label for="email" class="block text-sm text-start font-medium mb-2 text-gray-700">
-              Email 
+              Email
             </label>
-            <input
-              type="text"
-              id="email"
-              v-model="email"
-              :error="errors['email']"
-              required
+            <input type="text" id="email" v-model="email" :error="errors['email']" required
               class="w-full border text-black border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-[#08D9D6]"
-              placeholder="Enter Email"
-            />
+              placeholder="Enter Email" />
           </div>
 
           <!-- Username Field -->
@@ -92,14 +94,9 @@ const resetFields = () => {
             <label for="username" class="block text-sm text-start font-medium mb-2 text-gray-700">
               Username
             </label>
-            <input
-              type="text"
-              id="username"
-              v-model="username"
-              required
+            <input type="text" id="username" v-model="username" required
               class="w-full border text-black border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-[#08D9D6]"
-              placeholder="Enter your username"
-            />
+              placeholder="Enter your username" />
           </div>
 
           <!-- Password Field -->
@@ -107,15 +104,9 @@ const resetFields = () => {
             <label for="password" class="block text-sm text-start font-medium mb-2 text-gray-700">
               Password
             </label>
-            <input
-              type="password"
-              id="password"
-              v-model="password"
-              :error="errors['password']"
-              required
+            <input type="password" id="password" v-model="password" :error="errors['password']" required
               class="w-full border text-black border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-[#08D9D6]"
-              placeholder="Enter your password"
-            />
+              placeholder="Enter your password" />
           </div>
 
           <!-- Confirm Password Field for Registration Only -->
@@ -123,24 +114,16 @@ const resetFields = () => {
             <label for="confirm-password" class="block text-sm text-start font-medium mb-2 text-gray-700">
               Confirm Password
             </label>
-            <input
-              type="password"
-              id="confirm-password"
-              v-model="confirmPassword"
-              :error="errors['password']"
-              required
+            <input type="password" id="confirm-password" v-model="confirmPassword" :error="errors['password']" required
               class="w-full border text-black border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-[#08D9D6]"
-              placeholder="Confirm your password"
-            />
+              placeholder="Confirm your password" />
           </div>
         </div>
 
         <!-- Submit Button -->
         <div class="mt-12 space-y-2">
-          <button
-            type="submit"
-            class="w-full bg-[#FF2E63] text-white font-semibold py-2 rounded-md hover:bg-[#FF4B7E] transition"
-          >
+          <button type="submit"
+            class="w-full bg-[#FF2E63] text-white font-semibold py-2 rounded-md hover:bg-[#FF4B7E] transition">
             {{ isLogin ? 'Log In' : 'Register' }}
           </button>
 
@@ -148,10 +131,7 @@ const resetFields = () => {
           <div class="text-center text-sm mt-4 ">
             <p class="text-gray-400">
               {{ isLogin ? "Don't have an account?" : 'Already have an account?' }}
-              <button
-                @click="toggleLogin"
-                class="text-[#FF4B7E] hover:underline font-medium ml-1"
-              >
+              <button @click="toggleLogin" class="text-[#FF4B7E] hover:underline font-medium ml-1">
                 {{ isLogin ? 'Sign Up' : 'Log In' }}
               </button>
             </p>
