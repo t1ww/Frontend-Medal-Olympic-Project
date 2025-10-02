@@ -1,3 +1,4 @@
+<template></template>
 <!-- <script setup lang="ts">
 import InputText from '@/components/InputText.vue'
 import * as yup from 'yup'
