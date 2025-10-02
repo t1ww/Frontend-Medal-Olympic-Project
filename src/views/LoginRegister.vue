@@ -1,39 +1,36 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import * as yup from 'yup'
-import { useAuthStore } from '@/stores/auth'
-import { useField, useForm } from 'vee-validate'
-import { useMessageStore } from '@/stores/message'
-const messageStore = useMessageStore()
+import { ref } from 'vue';
+import * as yup from 'yup';
+import { useAuthStore } from '@/stores/auth';
+import { useField, useForm } from 'vee-validate';
+import { useMessageStore } from '@/stores/message';
+import { useRouter } from 'vue-router';
 
-import { useRouter } from 'vue-router'
-const router = useRouter()
+const messageStore = useMessageStore();
+const router = useRouter();
+const authStore = useAuthStore();
+
 const isLogin = ref(true);
-const { value: email } = useField('email')
-const { value: username } = useField('username')
-const { value: password } = useField('password')
-const { value: confirmPassword } = useField('confirmPassword')
 
-const authStore = useAuthStore()
-const validationSchema = computed(() => {
-  if (isLogin.value) {
-    // Login: only username & password required
-    return yup.object({
-      username: yup.string().required('Username is required'),
-      password: yup.string().required('Password is required')
-    })
-  } else {
-    // Registration
-    return yup.object({
-      email: yup.string().required('Email is required').email('Invalid email'),
-      username: yup.string().required('Username is required'),
-      password: yup.string().required('Password is required'),
-      confirmPassword: yup.string()
-        .oneOf([yup.ref('password')], 'Passwords must match')
-        .required('Confirm password is required')
-    })
-  }
-})
+// Form fields
+const { value: email } = useField('email');
+const { value: username } = useField('username');
+const { value: password } = useField('password');
+const { value: confirmPassword } = useField('confirmPassword');
+
+// Yup schema (all fields always registered)
+const validationSchema = () => yup.object({
+  email: isLogin.value
+    ? yup.string().notRequired()
+    : yup.string().required('Email is required').email('Invalid email'),
+  username: yup.string().required('Username is required'),
+  password: yup.string().required('Password is required'),
+  confirmPassword: isLogin.value
+    ? yup.string().notRequired()
+    : yup.string()
+      .oneOf([yup.ref('password')], 'Passwords must match')
+      .required('Confirm password is required')
+});
 
 const { errors, handleSubmit } = useForm({
   validationSchema,
@@ -43,26 +40,42 @@ const { errors, handleSubmit } = useForm({
     password: '',
     confirmPassword: ''
   }
-})
+});
 
+// Submit handler
 const onSubmit = handleSubmit((values) => {
-  authStore.login(values.email, values.password)
-    .then(() => {
-      router.push({ name: 'event-list-view' })
-    }).catch((err) => {
-      messageStore.updateMessage('could not login')
-      setTimeout(() => {
-        messageStore.resetMessage()
-      }, 3000)
-    })
-})
+  if (isLogin.value) {
+    authStore
+      .login(values.username, values.password)
+      .then(() => router.push({ name: 'event-list-view' }))
+      .catch(() => {
+        messageStore.updateMessage('Could not login');
+        setTimeout(() => messageStore.resetMessage(), 3000);
+      });
+  } else {
+    authStore
+      .register({
+        email: values.email,
+        username: values.username,
+        password: values.password,
+      })
+      .then(() => {
+        messageStore.updateMessage('Account created! Please log in.');
+        setTimeout(() => messageStore.resetMessage(), 3000);
+        toggleLogin();
+      })
+      .catch(() => {
+        messageStore.updateMessage('Could not register');
+        setTimeout(() => messageStore.resetMessage(), 3000);
+      });
+  }
+});
 
-// Toggle between Login and Registration
+// Toggle login/register
 const toggleLogin = () => {
   isLogin.value = !isLogin.value;
-  resetFields(); // Reset the form fields on toggle
+  resetFields();
 };
-
 
 // Reset form fields
 const resetFields = () => {
@@ -72,6 +85,7 @@ const resetFields = () => {
   confirmPassword.value = '';
 };
 </script>
+
 <template>
   <div class="min-h-screen bg-[#252A34] flex items-center justify-center">
     <div class="bg-white shadow-lg rounded-lg p-8 max-w-md w-full">

@@ -35,6 +35,21 @@ export const useAuthStore = defineStore('auth', {
           localStorage.setItem('user', JSON.stringify(this.user))
           return response;
         })
+    },
+    register({ email, username, password }: { email: string; username: string; password: string }) {
+      // Use the same apiClient, guessing the endpoint and payload
+      return apiClient
+        .post('/api/v1/auth/register', {
+          email,
+          username,
+          password
+        })
+        .then((response) => {
+          return response;
+        })
+        .catch((err) => {
+          throw err;
+        });
     }
   }
 })
