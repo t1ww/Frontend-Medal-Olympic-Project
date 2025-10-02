@@ -8,34 +8,43 @@ const messageStore = useMessageStore()
 
 import { useRouter } from 'vue-router'
 const router = useRouter()
-const username = ref('');
-
-const confirmPassword = ref('');
 const isLogin = ref(true);
+const { value: email } = useField('email')
+const { value: username } = useField('username')
+const { value: password } = useField('password')
+const { value: confirmPassword } = useField('confirmPassword')
 
 const authStore = useAuthStore()
-const validationSchema = computed(() => isLogin.value
-  ? yup.object({
-    username: yup.string().required('Username is required'),
-    password: yup.string().required('Password is required')
-  })
-  : yup.object({
-    email: yup.string().required('Email is required'),
-    username: yup.string().required('Username is required'),
-    password: yup.string().required('Password is required'),
-    confirmPassword: yup.string().oneOf([password.value], 'Passwords must match')
-  })
-)
+const validationSchema = computed(() => {
+  if (isLogin.value) {
+    // Login: only username & password required
+    return yup.object({
+      username: yup.string().required('Username is required'),
+      password: yup.string().required('Password is required')
+    })
+  } else {
+    // Registration
+    return yup.object({
+      email: yup.string().required('Email is required').email('Invalid email'),
+      username: yup.string().required('Username is required'),
+      password: yup.string().required('Password is required'),
+      confirmPassword: yup.string()
+        .oneOf([yup.ref('password')], 'Passwords must match')
+        .required('Confirm password is required')
+    })
+  }
+})
 
 const { errors, handleSubmit } = useForm({
   validationSchema,
   initialValues: {
     email: '',
-    password: ''
+    username: '',
+    password: '',
+    confirmPassword: ''
   }
 })
-const { value: email } = useField<string>('email')
-const { value: password } = useField<string>('password')
+
 const onSubmit = handleSubmit((values) => {
   authStore.login(values.email, values.password)
     .then(() => {
@@ -47,8 +56,6 @@ const onSubmit = handleSubmit((values) => {
       }, 3000)
     })
 })
-
-
 
 // Toggle between Login and Registration
 const toggleLogin = () => {
